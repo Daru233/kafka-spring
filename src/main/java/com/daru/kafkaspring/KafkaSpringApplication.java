@@ -1,12 +1,19 @@
 package com.daru.kafkaspring;
 
+import com.daru.kafkaspring.Message.Message;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+
+import java.time.Instant;
 
 @SpringBootApplication
 public class KafkaSpringApplication {
@@ -15,15 +22,18 @@ public class KafkaSpringApplication {
 		SpringApplication.run(KafkaSpringApplication.class, args);
 	}
 
+	@Value("${message.topic}")
+	String TOPIC;
+
+	public Message generateMessage() {
+		return new Message("header1", "body1", Instant.now().getEpochSecond());
+	}
+
 	// sending message to the topic
 	@Bean
-	CommandLineRunner commandLineRunner(KafkaTemplate<String, String> kafkaTemplate){
+	CommandLineRunner commandLineRunner(KafkaTemplate<String, Message> kafkaTemplate){
 		return args -> {
-//			for (int i = 0; i < 100; i++) {
-//				kafkaTemplate.send("kafka_topic", "Hello Kafka " + i);
-//			}
-			kafkaTemplate.send("kafka_topic", "Sending with our own simple KafkaProducer");
-
+			kafkaTemplate.send(TOPIC, generateMessage());
 		};
 	}
 
@@ -31,7 +41,7 @@ public class KafkaSpringApplication {
 	// if DOES exist will skip
 	@Bean
 	public NewTopic topic() {
-		return TopicBuilder.name("topic_created_from_sping")
+		return TopicBuilder.name(TOPIC)
 				.partitions(1)
 				.replicas(1)
 				.build();
